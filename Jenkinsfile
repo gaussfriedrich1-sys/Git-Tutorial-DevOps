@@ -1,38 +1,24 @@
 node {
-	def app
+    def app
 
-	stage('Clone repository') {
-		/* Let's make sure we have the repository cloned to our workspace */
+    stage('Clone repository') {
+        checkout scm
+    }
 
-		checkout scm 
+    stage('Build image') {
+        app = docker.build("edureka1/edureka")
+    }
 
-	}
+    stage('Test image') {
+        app.inside {
+            sh 'echo "Tests passed"'
+        }
+    }
 
-	stage('Build-image') {
-		/* This builds the actual image; synonymous to
-		* docker build on the command line */
-
-		app = docker.build("edureka1/edureka")
-
-	}
-
-	stage('test image') {
-		/* Ideally, we would run a test framework against our image.
-		* For this example, we're using a volkswagen-type approach ;-) */
-
-		app.inside {
-			sh 'echo "Testes passed" '
-		}
-	}
-
-	stage('Push image') {
-		/* Finally, we'll push the  image with two tags:
-		* First, the incremental build numbe from Jenkins
-		* Second, the 'latest' tag
-		* Pushing multiple tags is cheap, as all the layers  are reused. */
-		docker withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-			app.push("${env.BUILD_NUMBER}")
-			app.push('latest')
-		}
-	}
+    stage('Push image') {
+        docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
+            app.push("${env.BUILD_NUMBER}")
+            app.push('latest')
+        }
+    }
 }
